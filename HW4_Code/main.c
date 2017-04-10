@@ -3,7 +3,7 @@
 # include<math.h>       // I like to do math
 
 // DEVCFG0
-#pragma config DEBUG = OFF // no debugging
+#pragma config DEBUG = ON // no debugging
 #pragma config JTAGEN = OFF // no jtag
 #pragma config ICESEL = ICS_PGx1 // use PGED1 and PGEC1
 #pragma config PWP = OFF // no write protect
@@ -40,9 +40,79 @@
 
 #define CS LATBbits.LATB8       // chip select pin
 
-void setVoltage(char channel, char voltage)
+
+void initSPI1() 
+{
+    // Initialize the SPI connection
+    // Portions of code are taken from the example
+    // Set up chip select pin as output
+    TRISBbits.TRISB8 = 0;
+    CS = 1;
+    
+    
+    
+    // Setup SPI1
+    int rData;
+    
+    //IEC0CLR = 0x03800000
+    SPI1CON = 0;
+    rData = SPI1BUF;
+    /*
+    IFS0CLR = 0x03800000;
+    IPC5CLR = 0x1f000000;
+    IPC5SET = 0x0d000000;
+    IEC0SET = 0x03800000;
+*/
+    
+    SPI1BRG = 0x01;
+    
+    SPI1STATCLR = 0x40;
+    SPI1CON = 0x8220;
+    
+    SPI1STATbits.SPIROV = 0;
+    SPI1CONbits.CKE = 1;
+    SPI1CONbits.MSTEN = 1;
+    SPI1CONbits.ON = 1;
+    
+    
+    // Configure Pin Bits
+    //Put SD01 on RPA1
+    RPA1Rbits.RPA1R = 0b0011;
+    // Put SDI1 on RPB8
+    SDI1Rbits.SDI1R = 0b0100;
+    
+    
+ }
+
+unsigned char SPI1_IO(unsigned char write)
+{
+    SPI1BUF = write;
+
+  while(!SPI1STATbits.SPIRBF) 
+  { // wait to receive the byte
+    ;
+  }
+
+  return SPI1BUF;
+}
+
+void setVoltage(unsigned char channel, unsigned char voltage)
 {
     // Logic to set voltage using SPI
+    short message = 0b0011000000000000;
+    short mask;
+    mask = 0b1000000000000000*channel;
+    
+    message = message | mask;
+    
+    mask = 0+voltage;
+    mask = mask << 4;
+    message = message | mask;
+    
+    
+    CS = 1;
+    SPI1_IO(message);
+    CS = 0;
     
 }
 
@@ -65,21 +135,7 @@ int main() {
     // do your TRIS and LAT commands here
 
     __builtin_enable_interrupts();
-    
-    // Configure RB4 as input
-    ANSELB = 0;
-    TRISBbits.TRISB4 = 1;
-    
-    // Configure AN4 as output
-    ANSELA = 0;
-    TRISAbits.TRISA4 = 0;
-    
-    // Turn on the LED
-    LATAbits.LATA4 = 1;
-    
-    // Variable for the LED
-    char ledIsOn = 1;
-    
+        
     // Initialize the Timer
     _CP0_SET_COUNT(0);
     int timetoWait = 48000000*0.001/2;
@@ -90,9 +146,12 @@ int main() {
     int triangleCounter = 0;
     int sinCounter = 0;
     
+    // Voltage Level Variables
     unsigned char triangleLevel = 0;
     unsigned char sinLevel = 125;
     
+    // Initialize the SPI communication
+    initSPI1();
 
     while(1) {
         
