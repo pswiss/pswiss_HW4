@@ -70,7 +70,7 @@ int main() {
     int triangleCounter = 0;
     int sinCounter = 0;
     
-    // Voltage Level Variables
+    // Voltage Level Variables (initialize to arbitrary values)
     unsigned char triangleLevel = 0;
     unsigned char sinLevel = 125;
     
@@ -100,8 +100,6 @@ int main() {
             // Calculate the desired wave levels
             sinLevel = 125+125.0*sin(2*3.1415*(float)sinCounter/(float)sinCycleLimit);
             triangleLevel = 255*(float)triangleCounter/(float)triangleCycleLimit;
-            //sinLevel = 125;
-            //triangleLevel = 255;
             
             // Call the DAC function in order to write the levels
             setVoltage(0, sinLevel);
@@ -111,7 +109,5 @@ int main() {
             triangleCounter++;
             sinCounter++;
         }
-
-        
     }
 }
