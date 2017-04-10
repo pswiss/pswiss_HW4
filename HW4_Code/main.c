@@ -1,5 +1,6 @@
 #include<xc.h>           // processor SFR definitions
 #include<sys/attribs.h>  // __ISR macro
+# include<math.h>       // I like to do math
 
 // DEVCFG0
 #pragma config DEBUG = OFF // no debugging
@@ -37,6 +38,14 @@
 #pragma config FVBUSONIO = ON // USB BUSON controlled by USB module
 
 
+#define CS LATBbits.LATB8       // chip select pin
+
+void setVoltage(char channel, char voltage)
+{
+    // Logic to set voltage using SPI
+    
+}
+
 int main() {
 
     __builtin_disable_interrupts();
@@ -73,19 +82,45 @@ int main() {
     
     // Initialize the Timer
     _CP0_SET_COUNT(0);
-    int timetoWait = 48000000*0.0005/2;
+    int timetoWait = 48000000*0.001/2;
+    // Initialize counters for the triangle and sin wave
+    int triangleCycleLimit = 200;
+    int sinCycleLimit = 100;
+    
+    int triangleCounter = 0;
+    int sinCounter = 0;
+    
+    unsigned char triangleLevel = 0;
+    unsigned char sinLevel = 125;
+    
 
     while(1) {
-	    // use _CP0_SET_COUNT(0) and _CP0_GET_COUNT() to test the PIC timing
-		  // remember the core timer runs at half the CPU speed
         
-        // Wait for 0.0005 s
-        if(_CP0_GET_COUNT()>timetoWait&&PORTBbits.RB4==1)
+        // Wait for 0.001 s
+        if(_CP0_GET_COUNT()>timetoWait)
         {
             _CP0_SET_COUNT(0);
-            LATAbits.LATA4 = ~LATAbits.LATA4;
-            ledIsOn = ~ledIsOn;
             
+            // If counters have exceeded limits, reset them
+            if(triangleCounter >=triangleCycleLimit)
+            {
+                triangleCounter = 0;
+            }
+            if(sinCounter >= sinCycleLimit)
+            {
+                sinCounter = 0;
+            }
+            // Calculate the desired wave levels
+            sinLevel = 125+125.0*sin(2*3.1415*(float)sinCounter/(float)sinCycleLimit);
+            triangleLevel = 255*(float)triangleCounter/(float)triangleCycleLimit;
+            
+            // Call the DAC function in order to write the levels
+            setVoltage(0, sinLevel);
+            setVoltage(1, triangleLevel);
+            
+            // Increment Counters
+            triangleCounter++;
+            sinCounter++;
         }
 
         
