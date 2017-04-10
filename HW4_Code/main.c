@@ -49,25 +49,12 @@ void initSPI1()
     TRISBbits.TRISB8 = 0;
     CS = 1;
     
-    
-    
     // Setup SPI1
     int rData;
-    
-    //IEC0CLR = 0x03800000
     SPI1CON = 0;
     rData = SPI1BUF;
-    /*
-    IFS0CLR = 0x03800000;
-    IPC5CLR = 0x1f000000;
-    IPC5SET = 0x0d000000;
-    IEC0SET = 0x03800000;
-*/
     
-    SPI1BRG = 0x01;
-    
-    SPI1STATCLR = 0x40;
-    SPI1CON = 0x8220;
+    SPI1BRG = 0x0F;
     
     SPI1STATbits.SPIROV = 0;
     SPI1CONbits.CKE = 1;
@@ -88,18 +75,18 @@ unsigned char SPI1_IO(unsigned char write)
 {
     SPI1BUF = write;
 
-  while(!SPI1STATbits.SPIRBF) 
-  { // wait to receive the byte
-    ;
-  }
+    while(!SPI1STATbits.SPIRBF) 
+    { // wait to receive the byte
+      ;
+    }
 
-  return SPI1BUF;
+    return SPI1BUF;
 }
 
 void setVoltage(unsigned char channel, unsigned char voltage)
 {
     // Logic to set voltage using SPI
-    short message = 0b0011000000000000;
+    short message = 0b0111000000000000;
     short mask;
     mask = 0b1000000000000000*channel;
     
@@ -110,9 +97,10 @@ void setVoltage(unsigned char channel, unsigned char voltage)
     message = message | mask;
     
     
-    CS = 1;
-    SPI1_IO(message);
     CS = 0;
+    SPI1_IO(message&0xFF00>>8); // MSB
+    SPI1_IO(message&0x00FF); // LSB
+    CS = 1;
     
 }
 
@@ -149,6 +137,10 @@ int main() {
     // Voltage Level Variables
     unsigned char triangleLevel = 0;
     unsigned char sinLevel = 125;
+    
+    // Configure Bits
+    ANSELA = 0;
+    ANSELB = 0;
     
     // Initialize the SPI communication
     initSPI1();
