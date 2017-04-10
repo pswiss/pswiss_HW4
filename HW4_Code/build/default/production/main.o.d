@@ -1,2 +1,3 @@
 build/default/production/main.o:  \
-main.c 
+main.c  \
+spi_com.h 
