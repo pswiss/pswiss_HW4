@@ -38,7 +38,7 @@
 #pragma config FVBUSONIO = ON // USB BUSON controlled by USB module
 
 
-#define CS LATBbits.LATB8       // chip select pin
+#define CS LATBbits.LATB9       // chip select pin
 
 
 void initSPI1() 
@@ -46,7 +46,7 @@ void initSPI1()
     // Initialize the SPI connection
     // Portions of code are taken from the example
     // Set up chip select pin as output
-    TRISBbits.TRISB8 = 0;
+    TRISBbits.TRISB9 = 0;
     CS = 1;
     
     // Setup SPI1
@@ -54,7 +54,7 @@ void initSPI1()
     SPI1CON = 0;
     rData = SPI1BUF;
     
-    SPI1BRG = 0x0F;
+    SPI1BRG = 0x01;
     
     SPI1STATbits.SPIROV = 0;
     SPI1CONbits.CKE = 1;
@@ -79,14 +79,13 @@ unsigned char SPI1_IO(unsigned char write)
     { // wait to receive the byte
       ;
     }
-
     return SPI1BUF;
 }
 
 void setVoltage(unsigned char channel, unsigned char voltage)
 {
     // Logic to set voltage using SPI
-    short message = 0b0111000000000000;
+    short message = 0b0011000000000000;
     short mask;
     mask = 0b1000000000000000*channel;
     
@@ -96,10 +95,13 @@ void setVoltage(unsigned char channel, unsigned char voltage)
     mask = mask << 4;
     message = message | mask;
     
+    unsigned char msg1 = (message&0xFF00)>>8;
+    unsigned char msg2 = message&0x00FF;
+    
     
     CS = 0;
-    SPI1_IO(message&0xFF00>>8); // MSB
-    SPI1_IO(message&0x00FF); // LSB
+    SPI1_IO(msg1); // MSB
+    SPI1_IO(msg2); // LSB
     CS = 1;
     
 }
@@ -164,6 +166,8 @@ int main() {
             // Calculate the desired wave levels
             sinLevel = 125+125.0*sin(2*3.1415*(float)sinCounter/(float)sinCycleLimit);
             triangleLevel = 255*(float)triangleCounter/(float)triangleCycleLimit;
+            //sinLevel = 125;
+            //triangleLevel = 255;
             
             // Call the DAC function in order to write the levels
             setVoltage(0, sinLevel);
